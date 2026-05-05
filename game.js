@@ -7,7 +7,7 @@ const CONFIG = {
     size: 10,
     cellSize: 32,
     baseCoins: 10,
-    countdownTime: 3,      // segundos para memorizar
+    countdownTime: 4,      // segundos para memorizar
     maxStars: 3,
     hintCost: 5,
     colors: {
