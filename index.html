@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🧠 BrainGrid - Juego de Memoria</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Pantalla de Inicio -->
+    <div id="startScreen" class="screen active">
+        <div class="start-content">
+            <div class="logo-bounce">🧠</div>
+            <h1>BrainGrid</h1>
+            <p class="subtitle">¡Entrena tu memoria!</p>
+            <button id="btnPlay" class="btn-main">▶ JUGAR</button>
+            <button id="btnHowTo" class="btn-secondary">❓ CÓMO JUGAR</button>
+        </div>
+        <div class="floating-shapes">
+            <span>⭐</span><span>🎯</span><span>🧩</span><span>🏆</span>
+        </div>
+    </div>
+
+    <!-- Pantalla de Tutorial -->
+    <div id="tutorialScreen" class="screen">
+        <div class="tutorial-box">
+            <h2>📖 Cómo Jugar</h2>
+            <div class="tutorial-steps">
+                <div class="step">
+                    <div class="step-icon">👀</div>
+                    <p><strong>Mira el patrón</strong> que aparece en el tablero de arriba</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon">🖱️</div>
+                    <p><strong>Memorízalo</strong> y repítelo en el tablero de abajo</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon">✅</div>
+                    <p><strong>Verifica</strong> tu respuesta con el botón verde</p>
+                </div>
+            </div>
+            <div class="mode-info">
+                <h3>🎮 Modos de Juego</h3>
+                <p><strong>Modo Cuadrados:</strong> Toca las casillas correctas</p>
+                <p><strong>Modo Conectar:</strong> Une los puntos en orden</p>
+            </div>
+            <button id="btnBackFromTutorial" class="btn-secondary">⬅ Volver</button>
+        </div>
+    </div>
+
+    <!-- Pantalla de Juego -->
+    <div id="gameScreen" class="screen">
+        <!-- Header -->
+        <header class="game-header">
+            <div class="header-item">
+                <span class="header-icon">🏆</span>
+                <span id="levelDisplay">Nivel 1</span>
+            </div>
+            <div class="header-item coins">
+                <span class="header-icon">💰</span>
+                <span id="coinsDisplay">0</span>
+            </div>
+            <div class="header-item">
+                <span class="header-icon">⭐</span>
+                <span id="starsDisplay">0</span>
+            </div>
+        </header>
+
+        <!-- Barra de Modo -->
+        <div class="mode-bar">
+            <span id="modeBadge" class="mode-badge grid">🟦 MODO CUADRADOS</span>
+            <span id="timerDisplay" class="timer">⏱️ --</span>
+        </div>
+
+        <!-- Área de Juego -->
+        <div class="game-area">
+            <!-- Objetivo -->
+            <div class="canvas-wrapper target-wrapper">
+                <div class="canvas-label">👀 MIRA ESTO</div>
+                <canvas id="targetCanvas"></canvas>
+                <div class="countdown-overlay" id="countdownOverlay">
+                    <span id="countdownNumber">3</span>
+                </div>
+            </div>
+
+            <!-- Separador -->
+            <div class="divider">
+                <span>↓ TU TURNO ↓</span>
+            </div>
+
+            <!-- Jugador -->
+            <div class="canvas-wrapper player-wrapper">
+                <div class="canvas-label">🖱️ TOCA AQUÍ</div>
+                <canvas id="playerCanvas"></canvas>
+            </div>
+        </div>
+
+        <!-- Controles -->
+        <div class="controls">
+            <button id="btnVerify" class="btn-verify">✅ VERIFICAR</button>
+            <button id="btnClear" class="btn-clear">🗑️ BORRAR</button>
+            <button id="btnHint" class="btn-hint">💡 PISTA (-5💰)</button>
+        </div>
+
+        <!-- Botón Menú -->
+        <button id="btnMenu" class="btn-menu">🏠 Menú</button>
+    </div>
+
+    <!-- Pantalla de Victoria -->
+    <div id="winScreen" class="screen">
+        <div class="win-content">
+            <div class="win-stars" id="winStars">⭐⭐⭐</div>
+            <h2 id="winTitle">¡NIVEL COMPLETADO!</h2>
+            <div class="win-stats">
+                <p>🎁 +<span id="winCoins">0</span> monedas</p>
+                <p>⏱️ Tiempo: <span id="winTime">0s</span></p>
+            </div>
+            <button id="btnNextLevel" class="btn-main">▶ SIGUIENTE NIVEL</button>
+        </div>
+    </div>
+
+    <!-- Toast / Notificaciones -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Confetti Canvas -->
+    <canvas id="confettiCanvas"></canvas>
+</body>
+<script src="game.js"></script>
+</html>
