@@ -409,7 +409,7 @@ function startCountdown() {
                 showToast('🧠 ¡Memoriza y reproduce!', 'success');
             }
         }
-    }, 800);
+    }, 1000);
 }
 
 // --- TIMER ---
