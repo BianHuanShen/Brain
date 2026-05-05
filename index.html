@@ -180,7 +180,7 @@
             color: white;
         }
 
-        /* Countdown Overlay */
+        /* Countdown Overlay - CORREGIDO */
         .countdown-overlay {
             position: fixed;
             top: 0;
@@ -188,7 +188,7 @@
             width: 100%;
             height: 100%;
             background: rgba(0,0,0,0.85);
-            display: none;
+            display: none;  /* POR DEFECTO OCULTO */
             align-items: center;
             justify-content: center;
             z-index: 1000;
@@ -196,7 +196,7 @@
         }
 
         .countdown-overlay.active {
-            display: flex;
+            display: flex;  /* SOLO SE MUESTRA CON CLASE ACTIVE */
         }
 
         .countdown-number {
@@ -218,7 +218,7 @@
             100% { transform: scale(1); opacity: 1; }
         }
 
-        /* Toast */
+        /* Toast - CORREGIDO */
         .toast {
             position: fixed;
             bottom: 30px;
@@ -232,9 +232,11 @@
             z-index: 1001;
             transition: transform 0.3s ease;
             white-space: nowrap;
+            display: none;  /* POR DEFECTO OCULTO */
         }
 
         .toast.show {
+            display: block;  /* SOLO SE MUESTRA CON CLASE SHOW */
             transform: translateX(-50%) translateY(0);
         }
 
@@ -485,7 +487,7 @@
         <button class="btn btn-secondary" id="btnWinMenu" style="margin-top: 10px;">📋 MENÚ PRINCIPAL</button>
     </div>
 
-    <!-- Countdown Overlay -->
+    <!-- Countdown Overlay - INICIALMENTE OCULTO -->
     <div id="countdownOverlay" class="countdown-overlay">
         <div class="countdown-number" id="countdownNumber">5</div>
         <div class="countdown-text" id="countdownText">Preparate...</div>
@@ -494,7 +496,7 @@
         </div>
     </div>
 
-    <!-- Toast -->
+    <!-- Toast - INICIALMENTE OCULTO -->
     <div id="toast" class="toast"></div>
 
 <script>
@@ -523,7 +525,6 @@ const CONFIG = {
 };
 
 // --- FIGURAS POR NIVEL ---
-// Cada figura se define como una secuencia de puntos (x,y) en el grid de 10x10
 const LEVELS = [
     {
         name: "Casa Simple",
