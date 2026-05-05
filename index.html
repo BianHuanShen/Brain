@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brain Grid - Juego de Memoria Visual</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* Screens */
+        .screen {
+            display: none;
+            min-height: 100vh;
+            padding: 20px;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* Start Screen */
+        .start-screen {
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #a0aec0;
+            margin-bottom: 40px;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Nunito', sans-serif;
+            margin: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #e2e8f0;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Game Screen */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 15px;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 700;
+        }
+
+        .stat-icon {
+            font-size: 1.2rem;
+        }
+
+        .level-badge {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 800;
+        }
+
+        .canvas-container {
+            position: relative;
+            margin: 10px 0;
+        }
+
+        canvas {
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            background: #fff;
+            cursor: crosshair;
+        }
+
+        .target-label, .player-label {
+            text-align: center;
+            font-weight: 700;
+            margin: 8px 0;
+            font-size: 0.9rem;
+            color: #a0aec0;
+        }
+
+        .game-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn-control {
+            padding: 10px 25px;
+            font-size: 0.95rem;
+            border-radius: 25px;
+        }
+
+        .btn-verify {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-clear {
+            background: linear-gradient(135deg, #fc466b 0%, #3f5efb 100%);
+            color: white;
+        }
+
+        .btn-hint {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            color: #333;
+        }
+
+        .btn-menu {
+            background: rgba(255,255,255,0.15);
+            color: white;
+        }
+
+        /* Countdown Overlay */
+        .countdown-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            flex-direction: column;
+        }
+
+        .countdown-overlay.active {
+            display: flex;
+        }
+
+        .countdown-number {
+            font-size: 8rem;
+            font-weight: 900;
+            color: #fff;
+            animation: pulse 0.5s ease-out;
+        }
+
+        .countdown-text {
+            font-size: 1.5rem;
+            color: #a0aec0;
+            margin-top: 20px;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-weight: 700;
+            z-index: 1001;
+            transition: transform 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast.success { border-left: 4px solid #38ef7d; }
+        .toast.error { border-left: 4px solid #fc466b; }
+
+        /* Win Screen */
+        .win-screen {
+            text-align: center;
+        }
+
+        .win-title {
+            font-size: 3rem;
+            font-weight: 900;
+            margin-bottom: 20px;
+        }
+
+        .win-stars {
+            font-size: 4rem;
+            margin: 20px 0;
+            letter-spacing: 10px;
+        }
+
+        .win-stats {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin: 20px 0;
+            font-size: 1.2rem;
+        }
+
+        .win-stat {
+            background: rgba(255,255,255,0.1);
+            padding: 15px 25px;
+            border-radius: 15px;
+        }
+
+        /* Tutorial */
+        .tutorial-content {
+            max-width: 500px;
+            text-align: left;
+        }
+
+        .tutorial-step {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 10px 0;
+        }
+
+        .tutorial-step h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        /* Shake animation */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        /* Confetti canvas */
+        #confettiCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* Progress bar for memorize */
+        .memorize-progress {
+            width: 300px;
+            height: 6px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        .memorize-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 3px;
+            transition: width 1s linear;
+        }
+
+        /* Level selector */
+        .level-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .level-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 15px;
+            border: 2px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .level-btn:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.1);
+        }
+
+        .level-btn.locked {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .level-btn.completed {
+            border-color: #38ef7d;
+            background: rgba(56, 239, 125, 0.2);
+        }
+
+        .level-stars {
+            font-size: 0.7rem;
+        }
+
+        .shape-preview {
+            font-size: 2rem;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Confetti Canvas -->
+    <canvas id="confettiCanvas"></canvas>
+
+    <!-- Start Screen -->
+    <div id="startScreen" class="screen start-screen active">
+        <div class="logo">🧠 BRAIN GRID</div>
+        <div class="subtitle">Memoriza las figuras y reprodúcelas</div>
+        <div class="shape-preview">🔷⭐🏠🐦</div>
+        <button class="btn btn-primary" id="btnPlay">▶ JUGAR</button>
+        <button class="btn btn-secondary" id="btnHowTo">❓ CÓMO JUGAR</button>
+        <div style="margin-top: 30px; color: #a0aec0; font-size: 0.9rem;">
+            <div id="startStats">⭐ 0 | 🪙 0</div>
+        </div>
+    </div>
+
+    <!-- Tutorial Screen -->
+    <div id="tutorialScreen" class="screen">
+        <h2 style="margin-bottom: 20px;">📖 CÓMO JUGAR</h2>
+        <div class="tutorial-content">
+            <div class="tutorial-step">
+                <h3>1. Memoriza la figura</h3>
+                <p>Observa atentamente la figura que aparece en el panel superior durante unos segundos.</p>
+            </div>
+            <div class="tutorial-step">
+                <h3>2. Espera la cuenta regresiva</h3>
+                <p>Después de memorizar, hay una cuenta regresiva de 5 segundos para prepararte.</p>
+            </div>
+            <div class="tutorial-step">
+                <h3>3. Reproduce la figura</h3>
+                <p>En el panel inferior, haz clic en los puntos para dibujar la misma figura. Conecta los puntos en el orden correcto.</p>
+            </div>
+            <div class="tutorial-step">
+                <h3>4. Gana estrellas</h3>
+                <p>Cuanto más rápido completes la figura, más estrellas ganarás. ¡Consigue 3 estrellas en cada nivel!</p>
+            </div>
+        </div>
+        <button class="btn btn-secondary" id="btnBackFromTutorial" style="margin-top: 20px;">← VOLVER</button>
+    </div>
+
+    <!-- Level Select Screen -->
+    <div id="levelScreen" class="screen">
+        <h2 style="margin-bottom: 10px;">🎯 SELECCIONA NIVEL</h2>
+        <div style="color: #a0aec0; margin-bottom: 20px;">Completa los niveles para desbloquear más figuras</div>
+        <div class="level-grid" id="levelGrid"></div>
+        <button class="btn btn-secondary" id="btnBackFromLevels" style="margin-top: 20px;">← VOLVER AL MENÚ</button>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen" class="screen">
+        <div class="game-header">
+            <div class="stat">
+                <span class="level-badge" id="levelDisplay">Nivel 1</span>
+            </div>
+            <div class="stat">
+                <span class="stat-icon">⏱️</span>
+                <span id="timerDisplay">0s</span>
+            </div>
+            <div class="stat">
+                <span class="stat-icon">🪙</span>
+                <span id="coinsDisplay">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-icon">⭐</span>
+                <span id="starsDisplay">0</span>
+            </div>
+        </div>
+
+        <div class="target-label">👁️ MEMORIZA ESTA FIGURA</div>
+        <div class="canvas-container">
+            <canvas id="targetCanvas"></canvas>
+        </div>
+
+        <div class="player-label">✏️ DIBUJA AQUÍ</div>
+        <div class="canvas-container">
+            <canvas id="playerCanvas"></canvas>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-control btn-verify" id="btnVerify">✅ VERIFICAR</button>
+            <button class="btn btn-control btn-clear" id="btnClear">🗑️ LIMPIAR</button>
+            <button class="btn btn-control btn-hint" id="btnHint">💡 PISTA (5🪙)</button>
+            <button class="btn btn-control btn-menu" id="btnMenu">📋 MENÚ</button>
+        </div>
+    </div>
+
+    <!-- Win Screen -->
+    <div id="winScreen" class="screen win-screen">
+        <div class="win-title" id="winTitle">🏆 ¡PERFECTO!</div>
+        <div class="win-stars" id="winStars">⭐⭐⭐</div>
+        <div class="win-stats">
+            <div class="win-stat">
+                <div>🪙 Monedas</div>
+                <div id="winCoins" style="font-size: 1.5rem; font-weight: 800;">+20</div>
+            </div>
+            <div class="win-stat">
+                <div>⏱️ Tiempo</div>
+                <div id="winTime" style="font-size: 1.5rem; font-weight: 800;">12s</div>
+            </div>
+        </div>
+        <div style="margin: 20px 0; color: #a0aec0;" id="winShapeName"></div>
+        <button class="btn btn-primary" id="btnNextLevel">SIGUIENTE NIVEL →</button>
+        <button class="btn btn-secondary" id="btnWinMenu" style="margin-top: 10px;">📋 MENÚ PRINCIPAL</button>
+    </div>
+
+    <!-- Countdown Overlay -->
+    <div id="countdownOverlay" class="countdown-overlay">
+        <div class="countdown-number" id="countdownNumber">5</div>
+        <div class="countdown-text" id="countdownText">Preparate...</div>
+        <div class="memorize-progress" id="memorizeProgress" style="display:none;">
+            <div class="memorize-progress-bar" id="memorizeProgressBar" style="width: 100%;"></div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+
+<script>
+// ============================
+// BRAIN GRID - JUEGO COMPLETO CON FIGURAS
+// ============================
+
+// --- CONFIGURACIÓN ---
+const CONFIG = {
+    size: 10,
+    cellSize: 40,
+    baseCoins: 10,
+    memorizeTime: 6,
+    countdownTime: 5,
+    maxStars: 3,
+    hintCost: 5,
+    colors: {
+        grid: { fill: '#3b82f6', stroke: '#1d4ed8', glow: 'rgba(59,130,246,0.4)' },
+        connect: { fill: '#8b5cf6', stroke: '#6d28d9', glow: 'rgba(139,92,246,0.4)' },
+        target: { fill: '#1e293b', stroke: '#0f172a' },
+        hint: { fill: '#f59e0b', stroke: '#d97706' },
+        bg: '#f8fafc',
+        gridLine: '#e2e8f0',
+        dot: '#64748b'
+    }
+};
+
+// --- FIGURAS POR NIVEL ---
+// Cada figura se define como una secuencia de puntos (x,y) en el grid de 10x10
+const LEVELS = [
+    {
+        name: "Casa Simple",
+        icon: "🏠",
+        points: [
+            {x:2,y:6},{x:2,y:4},{x:3,y:3},{x:4,y:2},{x:5,y:3},{x:6,y:4},
+            {x:6,y:6},{x:5,y:6},{x:5,y:5},{x:3,y:5},{x:3,y:6},{x:2,y:6}
+        ],
+        difficulty: 1
+    },
+    {
+        name: "Estrella",
+        icon: "⭐",
+        points: [
+            {x:5,y:1},{x:6,y:4},{x:9,y:4},{x:7,y:6},{x:8,y:9},
+            {x:5,y:7},{x:2,y:9},{x:3,y:6},{x:1,y:4},{x:4,y:4},{x:5,y:1}
+        ],
+        difficulty: 1
+    },
+    {
+        name: "Barco",
+        icon: "⛵",
+        points: [
+            {x:2,y:7},{x:3,y:8},{x:7,y:8},{x:8,y:7},{x:7,y:7},{x:3,y:7},{x:2,y:7},
+            {x:5,y:7},{x:5,y:2},{x:7,y:4},{x:5,y:4},{x:5,y:2}
+        ],
+        difficulty: 1
+    },
+    {
+        name: "Flecha Arriba",
+        icon: "⬆️",
+        points: [
+            {x:5,y:1},{x:3,y:3},{x:4,y:3},{x:4,y:8},{x:6,y:8},{x:6,y:3},{x:7,y:3},{x:5,y:1}
+        ],
+        difficulty: 1
+    },
+    {
+        name: "Corazón",
+        icon: "❤️",
+        points: [
+            {x:5,y:3},{x:4,y:2},{x:3,y:2},{x:2,y:3},{x:2,y:4},{x:3,y:5},
+            {x:5,y:7},{x:7,y:5},{x:8,y:4},{x:8,y:3},{x:7,y:2},{x:6,y:2},{x:5,y:3}
+        ],
+        difficulty: 2
+    },
+    {
+        name: "Árbol",
+        icon: "🌲",
+        points: [
+            {x:5,y:1},{x:3,y:3},{x:4,y:3},{x:2,y:5},{x:4,y:5},{x:3,y:7},
+            {x:7,y:7},{x:6,y:5},{x:8,y:5},{x:6,y:3},{x:7,y:3},{x:5,y:1},
+            {x:4,y:7},{x:4,y:9},{x:6,y:9},{x:6,y:7}
+        ],
+        difficulty: 2
+    },
+    {
+        name: "Pájaro",
+        icon: "🐦",
+        points: [
+            {x:2,y:5},{x:3,y:4},{x:4,y:4},{x:5,y:3},{x:6,y:3},{x:7,y:4},
+            {x:8,y:4},{x:7,y:5},{x:6,y:5},{x:5,y:6},{x:4,y:6},{x:3,y:5},{x:2,y:5},
+            {x:6,y:5},{x:7,y:6},{x:7,y:7},{x:6,y:7},{x:5,y:6}
+        ],
+        difficulty: 2
+    },
+    {
+        name: "Cruz",
+        icon: "✚",
+        points: [
+            {x:4,y:2},{x:4,y:4},{x:2,y:4},{x:2,y:6},{x:4,y:6},
+            {x:4,y:8},{x:6,y:8},{x:6,y:6},{x:8,y:6},{x:8,y:4},
+            {x:6,y:4},{x:6,y:2},{x:4,y:2}
+        ],
+        difficulty: 2
+    },
+    {
+        name: "Cubo 3D",
+        icon: "🎲",
+        points: [
+            {x:3,y:3},{x:7,y:3},{x:7,y:7},{x:3,y:7},{x:3,y:3},
+            {x:5,y:1},{x:9,y:1},{x:9,y:5},{x:7,y:7},
+            {x:9,y:5},{x:5,y:5},{x:5,y:1},
+            {x:5,y:5},{x:3,y:7}
+        ],
+        difficulty: 3
+    },
+    {
+        name: "Hexágono",
+        icon: "⬡",
+        points: [
+            {x:3,y:4},{x:4,y:2},{x:6,y:2},{x:7,y:4},{x:6,y:6},{x:4,y:6},{x:3,y:4},
+            {x:4,y:4},{x:5,y:3},{x:6,y:4},{x:5,y:5},{x:4,y:4}
+        ],
+        difficulty: 3
+    },
+    {
+        name: "Flor",
+        icon: "🌸",
+        points: [
+            {x:5,y:3},{x:4,y:2},{x:3,y:3},{x:4,y:4},{x:3,y:5},{x:4,y:6},
+            {x:5,y:5},{x:6,y:6},{x:7,y:5},{x:6,y:4},{x:7,y:3},{x:6,y:2},{x:5,y:3},
+            {x:5,y:4},{x:5,y:6},{x:5,y:8}
+        ],
+        difficulty: 3
+    },
+    {
+        name: "Pez",
+        icon: "🐟",
+        points: [
+            {x:2,y:5},{x:3,y:4},{x:5,y:3},{x:7,y:3},{x:8,y:4},{x:8,y:5},
+            {x:7,y:6},{x:5,y:7},{x:3,y:6},{x:2,y:5},
+            {x:8,y:4},{x:9,y:3},{x:9,y:6},{x:8,y:5}
+        ],
+        difficulty: 3
+    },
+    {
+        name: "Mariposa",
+        icon: "🦋",
+        points: [
+            {x:5,y:2},{x:4,y:3},{x:3,y:2},{x:2,y:3},{x:2,y:5},{x:3,y:6},
+            {x:4,y:5},{x:5,y:6},{x:5,y:8},{x:5,y:6},{x:6,y:5},{x:7,y:6},
+            {x:8,y:5},{x:8,y:3},{x:7,y:2},{x:6,y:3},{x:5,y:2}
+        ],
+        difficulty: 3
+    },
+    {
+        name: "Avión",
+        icon: "✈️",
+        points: [
+            {x:5,y:1},{x:4,y:3},{x:2,y:4},{x:1,y:5},{x:2,y:5},{x:4,y:5},
+            {x:4,y:7},{x:3,y:8},{x:3,y:9},{x:5,y:9},{x:7,y:9},{x:7,y:8},
+            {x:6,y:7},{x:6,y:5},{x:8,y:5},{x:9,y:5},{x:8,y:4},{x:6,y:3},{x:5,y:1}
+        ],
+        difficulty: 4
+    },
+    {
+        name: "Castillo",
+        icon: "🏰",
+        points: [
+            {x:2,y:8},{x:2,y:4},{x:3,y:4},{x:3,y:3},{x:4,y:3},{x:4,y:4},
+            {x:5,y:4},{x:5,y:2},{x:6,y:2},{x:6,y:4},{x:7,y:4},{x:7,y:3},
+            {x:8,y:3},{x:8,y:4},{x:8,y:8},{x:2,y:8},
+            {x:4,y:6},{x:4,y:8},{x:6,y:8},{x:6,y:6},{x:4,y:6}
+        ],
+        difficulty: 4
+    },
+    {
+        name: "Cohete",
+        icon: "🚀",
+        points: [
+            {x:5,y:1},{x:4,y:2},{x:4,y:6},{x:3,y:7},{x:3,y:8},{x:4,y:7},
+            {x:4,y:9},{x:6,y:9},{x:6,y:7},{x:7,y:8},{x:7,y:7},{x:6,y:6},
+            {x:6,y:2},{x:5,y:1},
+            {x:5,y:3},{x:5,y:5}
+        ],
+        difficulty: 4
+    },
+    {
+        name: "Diamante",
+        icon: "💎",
+        points: [
+            {x:5,y:1},{x:3,y:3},{x:2,y:4},{x:3,y:5},{x:5,y:7},{x:7,y:5},
+            {x:8,y:4},{x:7,y:3},{x:5,y:1},
+            {x:5,y:3},{x:4,y:4},{x:5,y:5},{x:6,y:4},{x:5,y:3}
+        ],
+        difficulty: 4
+    },
+    {
+        name: "Cisne",
+        icon: "🦢",
+        points: [
+            {x:7,y:7},{x:6,y:6},{x:5,y:6},{x:4,y:5},{x:4,y:3},{x:5,y:2},
+            {x:6,y:2},{x:7,y:3},{x:7,y:4},{x:6,y:4},{x:6,y:5},{x:7,y:5},
+            {x:8,y:6},{x:8,y:7},{x:7,y:8},{x:5,y:8},{x:3,y:7},{x:2,y:6},
+            {x:3,y:5},{x:4,y:5}
+        ],
+        difficulty: 5
+    },
+    {
+        name: "Tren",
+        icon: "🚂",
+        points: [
+            {x:1,y:6},{x:1,y:4},{x:2,y:4},{x:2,y:3},{x:3,y:3},{x:3,y:4},
+            {x:5,y:4},{x:5,y:3},{x:6,y:3},{x:6,y:4},{x:8,y:4},{x:8,y:3},
+            {x:9,y:3},{x:9,y:6},{x:1,y:6},
+            {x:2,y:6},{x:2,y:7},{x:3,y:7},{x:3,y:6},
+            {x:7,y:6},{x:7,y:7},{x:8,y:7},{x:8,y:6}
+        ],
+        difficulty: 5
+    },
+    {
+        name: "Dragón",
+        icon: "🐉",
+        points: [
+            {x:2,y:6},{x:2,y:4},{x:3,y:3},{x:4,y:3},{x:5,y:4},{x:5,y:5},
+            {x:6,y:5},{x:7,y:4},{x:8,y:4},{x:8,y:5},{x:7,y:6},{x:6,y:6},
+            {x:6,y:7},{x:7,y:8},{x:6,y:8},{x:5,y:7},{x:4,y:7},{x:3,y:6},{x:2,y:6},
+            {x:8,y:4},{x:9,y:3},{x:8,y:2},{x:7,y:3}
+        ],
+        difficulty: 5
+    }
+];
+
+// --- ESTADO DEL JUEGO ---
+const state = {
+    level: 1,
+    coins: 0,
+    stars: 0,
+    targetShape: [],
+    playerShape: [],
+    currentIndex: 0,
+    isMemorizing: false,
+    startTime: 0,
+    elapsedTime: 0,
+    timerInterval: null,
+    totalStars: 0,
+    completedLevels: [],
+    levelStars: {}
+};
+
+// --- REFERENCIAS DOM ---
+const els = {
+    screens: {
+        start: document.getElementById('startScreen'),
+        tutorial: document.getElementById('tutorialScreen'),
+        level: document.getElementById('levelScreen'),
+        game: document.getElementById('gameScreen'),
+        win: document.getElementById('winScreen')
+    },
+    targetCanvas: document.getElementById('targetCanvas'),
+    playerCanvas: document.getElementById('playerCanvas'),
+    confettiCanvas: document.getElementById('confettiCanvas'),
+    countdownOverlay: document.getElementById('countdownOverlay'),
+    countdownNumber: document.getElementById('countdownNumber'),
+    countdownText: document.getElementById('countdownText'),
+    memorizeProgress: document.getElementById('memorizeProgress'),
+    memorizeProgressBar: document.getElementById('memorizeProgressBar'),
+    levelDisplay: document.getElementById('levelDisplay'),
+    coinsDisplay: document.getElementById('coinsDisplay'),
+    starsDisplay: document.getElementById('starsDisplay'),
+    timerDisplay: document.getElementById('timerDisplay'),
+    toast: document.getElementById('toast'),
+    winStars: document.getElementById('winStars'),
+    winTitle: document.getElementById('winTitle'),
+    winCoins: document.getElementById('winCoins'),
+    winTime: document.getElementById('winTime'),
+    winShapeName: document.getElementById('winShapeName'),
+    startStats: document.getElementById('startStats'),
+    levelGrid: document.getElementById('levelGrid'),
+    btnPlay: document.getElementById('btnPlay'),
+    btnHowTo: document.getElementById('btnHowTo'),
+    btnBackFromTutorial: document.getElementById('btnBackFromTutorial'),
+    btnBackFromLevels: document.getElementById('btnBackFromLevels'),
+    btnVerify: document.getElementById('btnVerify'),
+    btnClear: document.getElementById('btnClear'),
+    btnHint: document.getElementById('btnHint'),
+    btnMenu: document.getElementById('btnMenu'),
+    btnNextLevel: document.getElementById('btnNextLevel'),
+    btnWinMenu: document.getElementById('btnWinMenu')
+};
+
+const tCtx = els.targetCanvas.getContext('2d');
+const pCtx = els.playerCanvas.getContext('2d');
+const cCtx = els.confettiCanvas.getContext('2d');
+
+// --- INICIALIZACIÓN DE CANVAS ---
+function initCanvas() {
+    const w = CONFIG.size * CONFIG.cellSize;
+    const h = CONFIG.size * CONFIG.cellSize;
+
+    els.targetCanvas.width = w;
+    els.targetCanvas.height = h;
+    els.playerCanvas.width = w;
+    els.playerCanvas.height = h;
+
+    els.confettiCanvas.width = window.innerWidth;
+    els.confettiCanvas.height = window.innerHeight;
+
+    window.addEventListener('resize', () => {
+        els.confettiCanvas.width = window.innerWidth;
+        els.confettiCanvas.height = window.innerHeight;
+    });
+}
+
+// --- NAVEGACIÓN ENTRE PANTALLAS ---
+function showScreen(name) {
+    Object.values(els.screens).forEach(s => s.classList.remove('active'));
+    els.screens[name].classList.add('active');
+}
+
+// --- GUARDADO LOCAL ---
+function saveGame() {
+    try {
+        localStorage.setItem('brainGridData', JSON.stringify({
+            level: state.level,
+            coins: state.coins,
+            stars: state.totalStars,
+            completedLevels: state.completedLevels,
+            levelStars: state.levelStars,
+            timestamp: Date.now()
+        }));
+    } catch (e) {
+        console.warn('No se pudo guardar:', e);
+    }
+}
+
+function loadGame() {
+    try {
+        const data = JSON.parse(localStorage.getItem('brainGridData'));
+        if (data) {
+            state.level = data.level || 1;
+            state.coins = data.coins || 0;
+            state.totalStars = data.stars || 0;
+            state.completedLevels = data.completedLevels || [];
+            state.levelStars = data.levelStars || {};
+        }
+    } catch (e) {
+        console.warn('No se pudo cargar:', e);
+    }
+}
+
+// --- DIBUJAR GRID CON PUNTOS ---
+function drawGrid(ctx, highlightCells = []) {
+    const w = CONFIG.size * CONFIG.cellSize;
+    const h = CONFIG.size * CONFIG.cellSize;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Fondo
+    ctx.fillStyle = CONFIG.colors.bg;
+    ctx.fillRect(0, 0, w, h);
+
+    // Dibujar puntos en cada intersección
+    ctx.fillStyle = CONFIG.colors.dot;
+    for (let i = 0; i < CONFIG.size; i++) {
+        for (let j = 0; j < CONFIG.size; j++) {
+            const cx = i * CONFIG.cellSize + CONFIG.cellSize / 2;
+            const cy = j * CONFIG.cellSize + CONFIG.cellSize / 2;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    // Celdas destacadas (hints)
+    highlightCells.forEach(p => {
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.3)';
+        ctx.beginPath();
+        ctx.arc(p.x * CONFIG.cellSize + CONFIG.cellSize/2, p.y * CONFIG.cellSize + CONFIG.cellSize/2, 12, 0, Math.PI * 2);
+        ctx.fill();
+    });
+}
+
+// --- DIBUJAR FIGURA CON LÍNEAS ---
+function drawFigure(ctx, points, color, isTarget = false) {
+    if (points.length === 0) return;
+
+    const cs = CONFIG.cellSize;
+
+    // Dibujar líneas conectando puntos
+    ctx.strokeStyle = color;
+    ctx.lineWidth = isTarget ? 3 : 4;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Sombra para efecto 3D
+    if (!isTarget) {
+        ctx.shadowColor = color + '80';
+        ctx.shadowBlur = 10;
+    }
+
+    ctx.beginPath();
+    const start = points[0];
+    ctx.moveTo(start.x * cs + cs/2, start.y * cs + cs/2);
+
+    for (let i = 1; i < points.length; i++) {
+        const p = points[i];
+        ctx.lineTo(p.x * cs + cs/2, p.y * cs + cs/2);
+    }
+
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Dibujar puntos en cada vértice
+    points.forEach((p, i) => {
+        const cx = p.x * cs + cs/2;
+        const cy = p.y * cs + cs/2;
+
+        // Círculo exterior
+        ctx.beginPath();
+        ctx.arc(cx, cy, isTarget ? 5 : 7, 0, Math.PI * 2);
+        ctx.fillStyle = isTarget ? '#fff' : color;
+        ctx.fill();
+        ctx.strokeStyle = isTarget ? color : '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Número del punto (solo en modo target o para ayuda)
+        if (isTarget || !state.isMemorizing) {
+            ctx.fillStyle = isTarget ? color : '#fff';
+            ctx.font = 'bold 9px Nunito';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(i + 1, cx, cy);
+        }
+    });
+}
+
+// --- GENERAR NIVEL ---
+function generateLevel() {
+    const levelData = LEVELS[state.level - 1] || LEVELS[0];
+    state.targetShape = [...levelData.points];
+    state.playerShape = [];
+    state.currentIndex = 0;
+    state.isMemorizing = true;
+
+    // Dibujar objetivo
+    drawTarget();
+
+    // Limpiar jugador
+    drawPlayer();
+
+    // Actualizar UI
+    els.levelDisplay.textContent = `Nivel ${state.level}: ${levelData.icon} ${levelData.name}`;
+    updateUI();
+
+    // Iniciar cuenta regresiva
+    startCountdown();
+}
+
+// --- DIBUJAR OBJETIVO ---
+function drawTarget() {
+    drawGrid(tCtx);
+    const colors = ['#1e293b', '#334155', '#475569', '#64748b'];
+    const color = colors[(state.level - 1) % colors.length];
+    drawFigure(tCtx, state.targetShape, color, true);
+}
+
+// --- DIBUJAR JUGADOR ---
+function drawPlayer(highlightCells = []) {
+    drawGrid(pCtx, highlightCells);
+
+    const colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe'];
+    const color = colors[(state.level - 1) % colors.length];
+
+    drawFigure(pCtx, state.playerShape, color, false);
+
+    // Dibujar línea guía al siguiente punto esperado
+    if (!state.isMemorizing && state.playerShape.length > 0 && state.currentIndex < state.targetShape.length) {
+        const last = state.playerShape[state.playerShape.length - 1];
+        const next = state.targetShape[state.currentIndex];
+
+        pCtx.strokeStyle = color + '40';
+        pCtx.lineWidth = 2;
+        pCtx.setLineDash([5, 5]);
+        pCtx.beginPath();
+        pCtx.moveTo(last.x * CONFIG.cellSize + CONFIG.cellSize/2, last.y * CONFIG.cellSize + CONFIG.cellSize/2);
+        pCtx.lineTo(next.x * CONFIG.cellSize + CONFIG.cellSize/2, next.y * CONFIG.cellSize + CONFIG.cellSize/2);
+        pCtx.stroke();
+        pCtx.setLineDash([]);
+    }
+}
+
+// --- CUENTA REGRESIVA ---
+function startCountdown() {
+    let phase = 'memorize';
+    let memorizeTime = CONFIG.memorizeTime;
+    let count = CONFIG.countdownTime;
+
+    els.countdownOverlay.classList.add('active');
+    els.memorizeProgress.style.display = 'block';
+    els.memorizeProgressBar.style.width = '100%';
+
+    els.countdownNumber.textContent = '👁️ MEMORIZA';
+    els.countdownNumber.style.fontSize = '2.5rem';
+    els.countdownText.textContent = `Nivel ${state.level}: ${LEVELS[state.level-1]?.name || ''}`;
+
+    const interval = setInterval(() => {
+        if (phase === 'memorize') {
+            memorizeTime--;
+            els.memorizeProgressBar.style.width = `${(memorizeTime / CONFIG.memorizeTime) * 100}%`;
+
+            if (memorizeTime <= 0) {
+                phase = 'countdown';
+                els.countdownNumber.style.fontSize = '';
+                els.countdownNumber.textContent = count;
+                els.countdownText.textContent = '¡Prepárate!';
+                els.memorizeProgress.style.display = 'none';
+                animateCountdownNumber();
+            }
+        } else {
+            count--;
+
+            if (count > 0) {
+                els.countdownNumber.textContent = count;
+                animateCountdownNumber();
+            } else if (count === 0) {
+                els.countdownNumber.textContent = '✏️';
+                els.countdownText.textContent = '¡Dibuja!';
+                animateCountdownNumber();
+            } else {
+                clearInterval(interval);
+                els.countdownOverlay.classList.remove('active');
+                state.isMemorizing = false;
+                state.startTime = Date.now();
+                startTimer();
+
+                // Ocultar objetivo
+                drawGrid(tCtx);
+                showToast('🧠 ¡Reproduce la figura de memoria!', 'success');
+            }
+        }
+    }, 1000);
+}
+
+function animateCountdownNumber() {
+    els.countdownNumber.style.animation = 'none';
+    els.countdownNumber.offsetHeight;
+    els.countdownNumber.style.animation = '';
+}
+
+// --- TIMER ---
+function startTimer() {
+    clearInterval(state.timerInterval);
+    state.timerInterval = setInterval(() => {
+        state.elapsedTime = Math.floor((Date.now() - state.startTime) / 1000);
+        els.timerDisplay.textContent = `⏱️ ${state.elapsedTime}s`;
+    }, 1000);
+}
+
+function stopTimer() {
+    clearInterval(state.timerInterval);
+}
+
+// --- INPUT ---
+function handleInput(clientX, clientY) {
+    if (state.isMemorizing) {
+        showToast('⏳ Espera a que termine la cuenta...', 'error');
+        return;
+    }
+
+    const rect = els.playerCanvas.getBoundingClientRect();
+    const scaleX = els.playerCanvas.width / rect.width;
+    const scaleY = els.playerCanvas.height / rect.height;
+
+    const x = Math.floor(((clientX - rect.left) * scaleX) / CONFIG.cellSize);
+    const y = Math.floor(((clientY - rect.top) * scaleY) / CONFIG.cellSize);
+
+    if (x < 0 || x >= CONFIG.size || y < 0 || y >= CONFIG.size) return;
+
+    handleConnect(x, y);
+    drawPlayer();
+}
+
+function handleConnect(x, y) {
+    const expected = state.targetShape[state.currentIndex];
+
+    if (!expected) return;
+
+    // Verificar si el punto clickeado es el esperado
+    if (expected.x === x && expected.y === y) {
+        state.playerShape.push({ x, y });
+        state.currentIndex++;
+        playSound('tick');
+
+        // Verificar si completó la figura
+        if (state.currentIndex === state.targetShape.length) {
+            stopTimer();
+            levelComplete();
+        }
+    } else {
+        // Verificar si ya fue tocado
+        const alreadyTouched = state.playerShape.some(p => p.x === x && p.y === y);
+        if (!alreadyTouched) {
+            showToast('❌ ¡Sigue el orden correcto!', 'error');
+            playSound('error');
+
+            els.playerCanvas.classList.add('shake');
+            setTimeout(() => els.playerCanvas.classList.remove('shake'), 500);
+        }
+    }
+}
+
+// --- VALIDACIÓN MANUAL ---
+function checkSolution() {
+    if (state.playerShape.length === 0) {
+        showToast('🤔 Toca algunos puntos primero', 'error');
+        return;
+    }
+
+    const correct = state.targetShape.length === state.playerShape.length &&
+        state.targetShape.every((t, i) => 
+            state.playerShape[i] && state.playerShape[i].x === t.x && state.playerShape[i].y === t.y
+        );
+
+    if (correct) {
+        stopTimer();
+        levelComplete();
+    } else {
+        showToast('❌ ¡No coincide! Sigue el orden correcto', 'error');
+        playSound('error');
+
+        els.playerCanvas.classList.add('shake');
+        setTimeout(() => els.playerCanvas.classList.remove('shake'), 500);
+    }
+}
+
+// --- NIVEL COMPLETADO ---
+function levelComplete() {
+    stopTimer();
+
+    const levelData = LEVELS[state.level - 1];
+
+    // Calcular estrellas basado en tiempo y dificultad
+    const time = state.elapsedTime;
+    const baseTime = levelData.points.length * 1.5;
+    let stars = 1;
+    if (time <= baseTime) stars = 3;
+    else if (time <= baseTime * 1.8) stars = 2;
+
+    state.stars = stars;
+    state.totalStars += stars;
+
+    // Guardar estrellas del nivel
+    const prevStars = state.levelStars[state.level] || 0;
+    if (stars > prevStars) {
+        state.levelStars[state.level] = stars;
+    }
+
+    // Marcar nivel como completado
+    if (!state.completedLevels.includes(state.level)) {
+        state.completedLevels.push(state.level);
+    }
+
+    // Calcular monedas
+    const coinReward = CONFIG.baseCoins + (levelData.difficulty * 5) + (stars * 5);
+    state.coins += coinReward;
+
+    saveGame();
+    updateUI();
+
+    // Mostrar pantalla de victoria
+    showWinScreen(stars, coinReward, levelData);
+
+    // Efectos
+    playSound('win');
+    fireConfetti();
+}
+
+function showWinScreen(stars, coins, levelData) {
+    els.winStars.textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+    els.winCoins.textContent = '+' + coins;
+    els.winTime.textContent = state.elapsedTime + 's';
+    els.winShapeName.textContent = `${levelData.icon} ${levelData.name}`;
+
+    if (stars === 3) {
+        els.winTitle.textContent = '🏆 ¡PERFECTO!';
+        els.winTitle.style.color = '#f59e0b';
+    } else if (stars === 2) {
+        els.winTitle.textContent = '✨ ¡MUY BIEN!';
+        els.winTitle.style.color = '#6366f1';
+    } else {
+        els.winTitle.textContent = '👍 ¡BIEN HECHO!';
+        els.winTitle.style.color = '#10b981';
+    }
+
+    showScreen('win');
+}
+
+// --- PISTA ---
+function useHint() {
+    if (state.coins < CONFIG.hintCost) {
+        showToast(`💰 Necesitas ${CONFIG.hintCost} monedas`, 'error');
+        return;
+    }
+
+    const next = state.targetShape[state.currentIndex];
+    if (next) {
+        state.coins -= CONFIG.hintCost;
+        saveGame();
+        updateUI();
+        drawPlayer([next]);
+        showToast(`💡 ¡Toca el punto ${state.currentIndex + 1}!`, 'success');
+        playSound('hint');
+    } else {
+        showToast('✅ ¡Figura completa!', 'success');
+    }
+}
+
+// --- LIMPIAR ---
+function clearBoard() {
+    state.playerShape = [];
+    state.currentIndex = 0;
+    drawPlayer();
+    playSound('pop');
+    showToast('🗑️ Tablero limpio', 'success');
+}
+
+// --- UI ---
+function updateUI() {
+    els.coinsDisplay.textContent = state.coins;
+    els.starsDisplay.textContent = state.totalStars;
+    els.startStats.textContent = `⭐ ${state.totalStars} | 🪙 ${state.coins}`;
+    els.btnHint.disabled = state.coins < CONFIG.hintCost;
+}
+
+// --- TOAST ---
+let toastTimeout;
+function showToast(message, type = '') {
+    clearTimeout(toastTimeout);
+
+    els.toast.textContent = message;
+    els.toast.className = 'toast show ' + type;
+
+    toastTimeout = setTimeout(() => {
+        els.toast.classList.remove('show');
+    }, 2500);
+}
+
+// --- SONIDOS ---
+function playSound(type) {
+    const vibrations = {
+        tick: 10,
+        pop: 15,
+        error: 50,
+        win: 30,
+        hint: 20
+    };
+
+    if (navigator.vibrate && vibrations[type]) {
+        navigator.vibrate(vibrations[type]);
+    }
+}
+
+// --- CONFETTI ---
+function fireConfetti() {
+    const particles = [];
+    const colors = ['#f43f5e', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#667eea', '#764ba2'];
+
+    for (let i = 0; i < 150; i++) {
+        particles.push({
+            x: window.innerWidth / 2,
+            y: window.innerHeight / 2,
+            vx: (Math.random() - 0.5) * 20,
+            vy: (Math.random() - 0.5) * 20 - 5,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            size: Math.random() * 10 + 4,
+            life: 1,
+            decay: Math.random() * 0.02 + 0.01,
+            rotation: Math.random() * 360,
+            rotationSpeed: (Math.random() - 0.5) * 10
+        });
+    }
+
+    function animate() {
+        cCtx.clearRect(0, 0, els.confettiCanvas.width, els.confettiCanvas.height);
+
+        let alive = false;
+        particles.forEach(p => {
+            if (p.life > 0) {
+                alive = true;
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.3;
+                p.life -= p.decay;
+                p.rotation += p.rotationSpeed;
+
+                cCtx.save();
+                cCtx.globalAlpha = p.life;
+                cCtx.translate(p.x, p.y);
+                cCtx.rotate(p.rotation * Math.PI / 180);
+                cCtx.fillStyle = p.color;
+                cCtx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+                cCtx.restore();
+            }
+        });
+
+        if (alive) {
+            requestAnimationFrame(animate);
+        }
+    }
+
+    animate();
+}
+
+// --- GENERAR GRID DE NIVELES ---
+function generateLevelGrid() {
+    els.levelGrid.innerHTML = '';
+
+    LEVELS.forEach((level, index) => {
+        const levelNum = index + 1;
+        const isCompleted = state.completedLevels.includes(levelNum);
+        const isLocked = levelNum > 1 && !state.completedLevels.includes(levelNum - 1);
+        const stars = state.levelStars[levelNum] || 0;
+
+        const btn = document.createElement('div');
+        btn.className = `level-btn ${isCompleted ? 'completed' : ''} ${isLocked ? 'locked' : ''}`;
+        btn.innerHTML = `
+            <div>${level.icon}</div>
+            <div class="level-stars">${'⭐'.repeat(stars)}${'☆'.repeat(3-stars)}</div>
+        `;
+
+        if (!isLocked) {
+            btn.addEventListener('click', () => {
+                state.level = levelNum;
+                showScreen('game');
+                generateLevel();
+            });
+        }
+
+        els.levelGrid.appendChild(btn);
+    });
+}
+
+// --- INICIALIZACIÓN ---
+function init() {
+    loadGame();
+    initCanvas();
+    updateUI();
+
+    // Event listeners
+    els.btnPlay.addEventListener('click', () => {
+        generateLevelGrid();
+        showScreen('level');
+    });
+
+    els.btnHowTo.addEventListener('click', () => {
+        showScreen('tutorial');
+    });
+
+    els.btnBackFromTutorial.addEventListener('click', () => {
+        showScreen('start');
+    });
+
+    els.btnBackFromLevels.addEventListener('click', () => {
+        showScreen('start');
+    });
+
+    els.btnVerify.addEventListener('click', checkSolution);
+
+    els.btnClear.addEventListener('click', clearBoard);
+
+    els.btnHint.addEventListener('click', useHint);
+
+    els.btnMenu.addEventListener('click', () => {
+        showScreen('start');
+        stopTimer();
+    });
+
+    els.btnNextLevel.addEventListener('click', () => {
+        if (state.level < LEVELS.length) {
+            state.level++;
+        }
+        showScreen('game');
+        generateLevel();
+    });
+
+    els.btnWinMenu.addEventListener('click', () => {
+        showScreen('start');
+        updateUI();
+    });
+
+    // Input del canvas
+    els.playerCanvas.addEventListener('click', (e) => {
+        handleInput(e.clientX, e.clientY);
+    });
+
+    els.playerCanvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        handleInput(touch.clientX, touch.clientY);
+    });
+}
+
+// Iniciar el juego
+init();
+</script>
+</body>
+</html>
